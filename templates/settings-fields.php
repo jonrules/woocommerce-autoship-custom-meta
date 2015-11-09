@@ -1,6 +1,4 @@
-<h4>Custom Meta Fields</h4>
-
-<table class="wc-autoship-custom-meta-fields-table">
+<table class="wc-autoship-custom-meta-settings-fields">
 	<thead>
 	<tr>
 		<th><?php echo __( 'Meta Key', 'wc-autoship-custom-meta' ); ?></th>

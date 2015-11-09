@@ -28,7 +28,7 @@ register_uninstall_hook( __FILE__, 'wc_autoship_custom_meta_uninstall' );
 function wc_autoship_custom_meta_settings( $settings ) {
 	$settings[] = array(
 		'title' => __( 'Custom Meta', 'wc-autoship-custom-meta' ),
-		'desc' => __( 'Add custom meta fields to autoship orders', 'wc-autoship-custom-meta' ),
+		'desc' => __( 'Add custom meta fields to autoship orders.', 'wc-autoship-custom-meta' ),
 		'desc_tip' => false,
 		'type' => 'title',
 		'id' => 'wc_autoship_product_page_title'
@@ -50,7 +50,7 @@ add_filter( 'wc_autoship_settings', 'wc_autoship_custom_meta_settings', 10, 1 );
 
 function wc_autoship_custom_meta_fields( $value ) {
 	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
-	include( 'templates/admin/wc-autoship-custom-meta-fields.php' );
+	include( 'templates/settings-fields.php' );
 }
 add_action( 'woocommerce_admin_field_wc_autoship_custom_meta_fields', 'wc_autoship_custom_meta_fields' );
 
