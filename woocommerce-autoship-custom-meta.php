@@ -10,17 +10,17 @@ Author URI: http://patternsinthecloud.com
 License: Single-site
 */
 
-function wc_autoship_custom_meta_shipping_install() {
+function wc_autoship_custom_meta_install() {
 
 }
-register_activation_hook( __FILE__, 'wc_autoship_custom_meta_shipping_install' );
+register_activation_hook( __FILE__, 'wc_autoship_custom_meta_install' );
 
 function wc_autoship_custom_meta_shipping_deactivate() {
 
 }
-register_deactivation_hook( __FILE__, 'wc_autoship_custom_meta_shipping_deactivate' );
+register_deactivation_hook( __FILE__, 'wc_autoship_custom_meta_deactivate' );
 
 function wc_autoship_custom_meta_shipping_uninstall() {
 
 }
-register_uninstall_hook( __FILE__, 'wc_autoship_custom_meta_shipping_uninstall' );
+register_uninstall_hook( __FILE__, 'wc_autoship_custom_meta_uninstall' );
