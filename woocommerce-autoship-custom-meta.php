@@ -69,6 +69,12 @@ function wc_autoship_custom_meta_update_options( $options ) {
 }
 add_action( 'woocommerce_update_options_wc_autoship', 'wc_autoship_custom_meta_update_options' );
 
+function wc_autoship_custom_meta_checkout_fields() {
+	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	include( 'templates/checkout-fields.php' );
+}
+add_action( 'woocommerce_checkout_after_customer_details', 'wc_autoship_custom_meta_checkout_fields' );
+
 function wc_autoship_custom_meta_key_compare( $a, $b ) {
 	return strcasecmp( $a['key'], $b['key'] );
 }
