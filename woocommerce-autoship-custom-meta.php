@@ -25,6 +25,11 @@ function wc_autoship_custom_meta_uninstall() {
 }
 register_uninstall_hook( __FILE__, 'wc_autoship_custom_meta_uninstall' );
 
+function wc_autoship_custom_meta_scripts() {
+	wp_enqueue_script( 'wc-autoship-custom-meta-autoship-schedule', plugin_dir_url( __FILE__ ) . 'js/autoship-schedule.js', array( 'autoship-schedule' ) );
+}
+add_action( 'wp_enqueue_scripts', 'wc_autoship_custom_meta_scripts' );
+
 function wc_autoship_custom_meta_settings( $settings ) {
 	$settings[] = array(
 		'title' => __( 'Custom Meta', 'wc-autoship-custom-meta' ),
@@ -74,6 +79,12 @@ function wc_autoship_custom_meta_checkout_fields() {
 	include( 'templates/checkout-fields.php' );
 }
 add_action( 'woocommerce_checkout_after_customer_details', 'wc_autoship_custom_meta_checkout_fields' );
+
+function wc_autoship_custom_meta_schedule_fields( $schedule_id ) {
+	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	include( 'templates/autoship-schedule-fields.php' );
+}
+add_action( 'wc_autoship_schedule_after_items', 'wc_autoship_custom_meta_schedule_fields' );
 
 function wc_autoship_custom_meta_key_compare( $a, $b ) {
 	return strcasecmp( $a['key'], $b['key'] );
