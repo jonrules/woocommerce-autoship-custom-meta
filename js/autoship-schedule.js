@@ -9,9 +9,9 @@ AutoshipSchedule.prototype.onBindScheduleActions.push(function ($schedule) {
 			key: $input.attr('name'),
 			value: $input.val()
 		};
-		context.sendRequest(schedule_id, AUTOSHIP_SCHEDULES.ajax_url + '?action=schedules_action_save_custom_meta_field', data, 700, function (meta_field) {
-			console.log(meta_field);
+		context.sendRequest(schedule_id, AUTOSHIP_SCHEDULES.ajax_url + '?action=schedules_action_save_custom_meta_field', data, 700, function () {
+
 		});
 	};
-	$schedule.find('.wc-autoship-custom-meta-schedule-field').keyup(saveCustomMetaField).change(saveCustomMetaField);
+	$schedule.find('.wc-autoship-custom-meta-schedule-field').keyup(saveCustomMetaField);
 });

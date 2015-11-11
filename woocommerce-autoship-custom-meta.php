@@ -11,7 +11,19 @@ License: Single-site
 */
 
 function wc_autoship_custom_meta_install() {
-
+	global $wpdb;
+	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+	// Create tables
+	$create_sql =
+			"CREATE TABLE {$wpdb->prefix}wc_autoship_schedule_custom_meta (
+			schedule_id BIGINT(20) UNSIGNED NOT NULL,
+			meta_key VARCHAR(255) NOT NULL,
+			meta_value VARCHAR(255) NOT NULL,
+			created_time DATETIME NOT NULL,
+			modified_time DATETIME NOT NULL,
+			PRIMARY KEY  (schedule_id,meta_key)
+			);";
+	dbDelta( $create_sql );
 }
 register_activation_hook( __FILE__, 'wc_autoship_custom_meta_install' );
 
@@ -81,10 +93,93 @@ function wc_autoship_custom_meta_checkout_fields() {
 add_action( 'woocommerce_checkout_after_customer_details', 'wc_autoship_custom_meta_checkout_fields' );
 
 function wc_autoship_custom_meta_schedule_fields( $schedule_id ) {
+	global $wpdb;
+
+	$values = array();
+	$meta_result = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$wpdb->prefix}wc_autoship_schedule_custom_meta WHERE schedule_id = %d",
+			$schedule_id
+	) );
+	foreach ( $meta_result as $meta ) {
+		$values[ $meta->meta_key ] = $meta->meta_value;
+	}
 	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
 	include( 'templates/autoship-schedule-fields.php' );
 }
 add_action( 'wc_autoship_schedule_after_items', 'wc_autoship_custom_meta_schedule_fields' );
+
+function wc_autoship_custom_meta_ajax_save_field() {
+	global $wpdb;
+
+	$user_id = get_current_user_id();
+	$schedule_id = $_POST['schedule_id'];
+	$key = $_POST['key'];
+	$value = $_POST['value'];
+
+	if (empty( $user_id ) ) {
+		header( "HTTP/1.1 403 Unauthorized" );
+		die();
+	}
+
+	if ( empty( $schedule_id ) || empty( $key ) ) {
+		header( "HTTP/1.1 400 Bad Request" );
+		die();
+	}
+
+	// Check schedule owner
+	$customer_id = $wpdb->get_var( $wpdb->prepare(
+			"SELECT customer_id
+			FROM {$wpdb->prefix}wc_autoship_schedules
+			WHERE id = %d",
+			$schedule_id
+	) );
+	if ( empty( $customer_id ) ) {
+		// Not found
+		header( "HTTP/1.1 404 Not Found" );
+		die();
+	}
+	if ( $user_id != $customer_id && ! user_can( $user_id, 'manage_woocommerce' ) ) {
+		// Action not allowed
+		header( "HTTP/1.1 403 Unauthorized" );
+		die();
+	}
+
+	$wpdb->show_errors( false );
+	$now = date('Y-m-d H:i:s');
+	// Try insert
+	$insert_data = array( 'schedule_id' => $schedule_id, 'meta_key' => $key, 'meta_value' => $value, 'created_time' => $now, 'modified_time' => $now );
+	$insert = $wpdb->insert( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $insert_data );
+	if ( $insert !== false ) {
+		header( "HTTP/1.1 200 OK" );
+		die();
+	} else {
+		// Try update
+		$update_data = array( 'meta_value' => $value, 'modified_time' => $now );
+		$update_where = array( 'schedule_id' => $schedule_id, 'meta_key' => $key );
+		$update = $wpdb->update( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $update_data, $update_where );
+		if ( $update !== false ) {
+			header( "HTTP/1.1 200 OK" );
+			die();
+		}
+	}
+	$wpdb->show_errors( true );
+
+	header( "HTTP/1.1 500 Internal Server Error" );
+	die();
+}
+add_action( 'wp_ajax_schedules_action_save_custom_meta_field', 'wc_autoship_custom_meta_ajax_save_field' );
+
+function wc_autoship_custom_meta_schedule_delete( $result, $schedule_id ) {
+	global $wpdb;
+
+	if ( $result === false) {
+		return;
+	}
+
+	$where = array( 'schedule_id' => $schedule_id );
+	$wpdb->delete( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $where );
+}
+add_action( 'wc_autoship_schedule_delete', 'wc_autoship_custom_meta_schedule_delete', 10, 2 );
 
 function wc_autoship_custom_meta_key_compare( $a, $b ) {
 	return strcasecmp( $a['key'], $b['key'] );
