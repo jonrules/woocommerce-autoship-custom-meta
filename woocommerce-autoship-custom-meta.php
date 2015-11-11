@@ -102,13 +102,8 @@ function wc_autoship_custom_meta_checkout_fields() {
 add_action( 'woocommerce_checkout_after_customer_details', 'wc_autoship_custom_meta_checkout_fields' );
 
 function wc_autoship_custom_meta_schedule_fields( $schedule_id ) {
-	global $wpdb;
-
 	$values = array();
-	$meta_result = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}wc_autoship_schedule_custom_meta WHERE schedule_id = %d",
-			$schedule_id
-	) );
+	$meta_result = wc_autoship_custom_meta_get( $schedule_id );
 	foreach ( $meta_result as $meta ) {
 		$values[ $meta->meta_key ] = $meta->meta_value;
 	}
@@ -153,25 +148,10 @@ function wc_autoship_custom_meta_ajax_save_field() {
 		die();
 	}
 
-	$wpdb->show_errors( false );
-	$now = date('Y-m-d H:i:s');
-	// Try insert
-	$insert_data = array( 'schedule_id' => $schedule_id, 'meta_key' => $key, 'meta_value' => $value, 'created_time' => $now, 'modified_time' => $now );
-	$insert = $wpdb->insert( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $insert_data );
-	if ( $insert !== false ) {
+	if ( wc_autoship_custom_meta_save( $schedule_id, $key, $value ) ) {
 		header( "HTTP/1.1 200 OK" );
 		die();
-	} else {
-		// Try update
-		$update_data = array( 'meta_value' => $value, 'modified_time' => $now );
-		$update_where = array( 'schedule_id' => $schedule_id, 'meta_key' => $key );
-		$update = $wpdb->update( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $update_data, $update_where );
-		if ( $update !== false ) {
-			header( "HTTP/1.1 200 OK" );
-			die();
-		}
 	}
-	$wpdb->show_errors( true );
 
 	header( "HTTP/1.1 500 Internal Server Error" );
 	die();
@@ -189,6 +169,85 @@ function wc_autoship_custom_meta_schedule_delete( $result, $schedule_id ) {
 	$wpdb->delete( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $where );
 }
 add_action( 'wc_autoship_schedule_delete', 'wc_autoship_custom_meta_schedule_delete', 10, 2 );
+
+function wc_autoship_custom_meta_order_processed( $order_id ) {
+	if ( is_checkout() ) {
+		if ( ! isset( $_POST['wc_autoship_custom_meta'] ) ) {
+			return;
+		}
+		$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+		foreach ( $fields as $f => $field ) {
+			if ( isset( $_POST[ 'wc_autoship_custom_meta' ][ $f ] ) ) {
+				add_post_meta( $order_id, $field['key'], stripslashes(  $_POST[ 'wc_autoship_custom_meta' ][ $f ] ), true );
+			}
+		}
+	}
+}
+add_action( 'woocommerce_checkout_order_processed', 'wc_autoship_custom_meta_order_processed', 10, 1 );
+
+function wc_autoship_custom_meta_autoship_order_processed( $order_id, $schedule_id ) {
+	$meta_result = wc_autoship_custom_meta_get( $schedule_id );
+	if ( empty( $meta_result ) ) {
+		return;
+	}
+	$values = array();
+	foreach ( $meta_result as $meta ) {
+		$values[ $meta->meta_key ] = $meta->meta_value;
+	}
+	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	foreach ( $fields as $field ) {
+		if ( isset( $values[ $field['key'] ] ) ) {
+			add_post_meta( $order_id, $field['key'], $values[ $field['key'] ], true );
+		}
+	}
+}
+add_action( 'wc_autoship_order_processed', 'wc_autoship_custom_meta_autoship_order_processed', 10, 2 );
+
+function wc_autoship_custom_meta_checkout_create_autoship_schedule( $schedule_id ) {
+	if ( ! isset( $_POST['wc_autoship_custom_meta'] ) ) {
+		return;
+	}
+	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	foreach ( $fields as $f => $field ) {
+		if ( isset( $_POST[ 'wc_autoship_custom_meta' ][ $f ] ) ) {
+			wc_autoship_custom_meta_save( $schedule_id, $field['key'], stripslashes(  $_POST[ 'wc_autoship_custom_meta' ][ $f ] ) );
+		}
+	}
+}
+add_action( 'wc_autoship_checkout_create_autoship_schedule', 'wc_autoship_custom_meta_checkout_create_autoship_schedule', 10, 1 );
+
+function wc_autoship_custom_meta_save( $schedule_id, $key, $value ) {
+	global $wpdb;
+
+	$wpdb->show_errors( false );
+	$result = false;
+	$now = date('Y-m-d H:i:s');
+	// Try insert
+	$insert_data = array( 'schedule_id' => $schedule_id, 'meta_key' => $key, 'meta_value' => $value, 'created_time' => $now, 'modified_time' => $now );
+	$insert = $wpdb->insert( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $insert_data );
+	if ( $insert !== false ) {
+		$result = true;
+	} else {
+		// Try update
+		$update_data = array( 'meta_value' => $value, 'modified_time' => $now );
+		$update_where = array( 'schedule_id' => $schedule_id, 'meta_key' => $key );
+		$update = $wpdb->update( "{$wpdb->prefix}wc_autoship_schedule_custom_meta", $update_data, $update_where );
+		if ( $update !== false ) {
+			$result = true;
+		}
+	}
+	$wpdb->show_errors( true );
+	return $result;
+}
+
+function wc_autoship_custom_meta_get( $schedule_id ) {
+	global $wpdb;
+	$meta_result = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$wpdb->prefix}wc_autoship_schedule_custom_meta WHERE schedule_id = %d",
+			$schedule_id
+	) );
+	return $meta_result;
+}
 
 function wc_autoship_custom_meta_key_compare( $a, $b ) {
 	return strcasecmp( $a['key'], $b['key'] );
