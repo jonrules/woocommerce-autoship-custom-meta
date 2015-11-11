@@ -72,18 +72,25 @@ function wc_autoship_custom_meta_fields( $value ) {
 add_action( 'woocommerce_admin_field_wc_autoship_custom_meta_fields', 'wc_autoship_custom_meta_fields' );
 
 function wc_autoship_custom_meta_update_options( $options ) {
+	global $wpdb;
 	if ( isset( $_POST['wc_autoship_custom_meta_fields'] ) ) {
 		$fields = $_POST['wc_autoship_custom_meta_fields'];
 		$filtered_fields = array();
+		$key_args = array();
 		foreach ( $fields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
 				$field['key'] = stripslashes( $field['key'] );
 				$field['default_value'] = stripslashes( $field['default_value'] );
 				$filtered_fields[] = $field;
+				$key_args[] = $wpdb->prepare( '%s', $field['key'] );
 			}
 		}
 		usort( $filtered_fields, 'wc_autoship_custom_meta_key_compare' );
 		update_option( 'wc_autoship_custom_meta_fields', $filtered_fields );
+		$wpdb->query(
+				"DELETE FROM {$wpdb->prefix}wc_autoship_schedule_custom_meta
+				WHERE meta_key NOT IN(" . implode( ',', $key_args ) . ')'
+		);
 	}
 }
 add_action( 'woocommerce_update_options_wc_autoship', 'wc_autoship_custom_meta_update_options' );
