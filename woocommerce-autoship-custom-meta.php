@@ -77,6 +77,8 @@ function wc_autoship_custom_meta_update_options( $options ) {
 		$filtered_fields = array();
 		foreach ( $fields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
+				$field['key'] = stripslashes( $field['key'] );
+				$field['default_value'] = stripslashes( $field['default_value'] );
 				$filtered_fields[] = $field;
 			}
 		}
@@ -113,8 +115,8 @@ function wc_autoship_custom_meta_ajax_save_field() {
 
 	$user_id = get_current_user_id();
 	$schedule_id = $_POST['schedule_id'];
-	$key = $_POST['key'];
-	$value = $_POST['value'];
+	$key = stripslashes( $_POST['key'] );
+	$value = stripslashes( $_POST['value'] );
 
 	if (empty( $user_id ) ) {
 		header( "HTTP/1.1 403 Unauthorized" );
