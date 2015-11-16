@@ -4,7 +4,7 @@
 Plugin Name: WC Autoship Custom Meta
 Plugin URI: https://wooautoship.com
 Description: Add custom meta fields to WC Autoship
-Version: 1.0
+Version: 1.0b
 Author: Patterns In the Cloud
 Author URI: http://patternsinthecloud.com
 License: Single-site
