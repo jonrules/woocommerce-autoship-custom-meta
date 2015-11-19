@@ -48,7 +48,14 @@ function wc_autoship_custom_meta_settings( $settings ) {
 		'desc' => __( 'Add custom meta fields to autoship orders.', 'wc-autoship-custom-meta' ),
 		'desc_tip' => false,
 		'type' => 'title',
-		'id' => 'wc_autoship_product_page_title'
+		'id' => 'wc_autoship_custom_meta_title'
+	);
+	$settings[] = array(
+		'name' => __( 'Custom Meta Fields Title', 'wc-autoship-custom-meta' ),
+		'desc' => __( 'Enter a title for the custom meta fields.', 'wc-autoship-custom-meta' ),
+		'desc_tip' => true,
+		'type' => 'text',
+		'id' => 'wc_autoship_custom_meta_fields_title'
 	);
 	$settings[] = array(
 		'name' => __( 'Custom Meta Fields', 'wc-autoship-custom-meta' ),
@@ -80,6 +87,7 @@ function wc_autoship_custom_meta_update_options( $options ) {
 		foreach ( $fields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
 				$field['key'] = stripslashes( $field['key'] );
+				$field['title'] = stripslashes( $field['title'] );
 				$field['default_value'] = stripslashes( $field['default_value'] );
 				$filtered_fields[] = $field;
 				$key_args[] = $wpdb->prepare( '%s', $field['key'] );
@@ -97,6 +105,7 @@ add_action( 'woocommerce_update_options_wc_autoship', 'wc_autoship_custom_meta_u
 
 function wc_autoship_custom_meta_checkout_fields() {
 	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	$fields_title = get_option( 'wc_autoship_custom_meta_fields_title', '' );
 	include( 'templates/checkout-fields.php' );
 }
 add_action( 'woocommerce_checkout_after_customer_details', 'wc_autoship_custom_meta_checkout_fields' );
@@ -108,6 +117,7 @@ function wc_autoship_custom_meta_schedule_fields( $schedule_id ) {
 		$values[ $meta->meta_key ] = $meta->meta_value;
 	}
 	$fields = get_option( 'wc_autoship_custom_meta_fields', array() );
+	$fields_title = get_option( 'wc_autoship_custom_meta_fields_title', '' );
 	include( 'templates/autoship-schedule-fields.php' );
 }
 add_action( 'wc_autoship_schedule_after_items', 'wc_autoship_custom_meta_schedule_fields' );
